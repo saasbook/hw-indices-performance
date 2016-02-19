@@ -38,14 +38,16 @@ Take a look at the model files in /app/models/ to get a better understanding of 
 * Moviegoer has many Movies through Reviews.
 
 New features for users in various stages of completion:
-Implemented:
+
+**Implemented:**
 
 * A user can now view the average score for a film. Handled by Moviescontroller#score
 * A user can now view all films reviewed by the reviewers of a given film. Handled by Moviescontroller#viewed_with
 
-Planned:
+**Planned:**
+
 * A user should be able to see all of a Moviegoer's Reviews
-* 
+
 This will involve a query that looks like moviegoer.reviews
 Unfortunately, the way that the prototype database is set up will prevent these great new features from scaling very well. As the number of Reviews grows, the performance will drop significantly.
 
