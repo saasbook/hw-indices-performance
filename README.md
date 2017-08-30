@@ -6,9 +6,9 @@ You have been assigned to improve the database performance of a new version of t
 Setup:
 ----
 
-Clone this repository and cd inside it
+Fork this repo and clone your fork to your development environment.
 
-Now run:
+Now in your development environment run:
 
 ```
 bundle install --without production
@@ -24,43 +24,45 @@ rake db:seed
 
 The seed command may take a while as it generates roughly 5000 database entries. If the seed command is taking too long, consider lowering the amount of data that it creates by changing the following lines of db/seeds.rb:
 
+```
 movie_count=250  
 review_count=20  
+```
 
 This version of the app has some changes:
 
-Review and Moviegoer models have been added.
-Take a look at the model files in /app/models/ to get a better understanding of the relationship between the models. Note that:
+`Review` and `Moviegoer` models have been added.
+Take a look at the model files in `app/models/` to get a better understanding of the relationship between the models. Note that:
 
-* Movie has many Reviews.
-* Movie has many Moviegoers through Reviews.
-* Moviegoer has many Reviews.
-* Moviegoer has many Movies through Reviews.
+* `Movie` has many `Review`s.
+* `Movie` has many `Moviegoer`s through `Review`.
+* `Moviegoer` has many `Review`s.
+* `Moviegoer` has many `Movie`s through `Review`.
 
 New features for users in various stages of completion:
 
 **Implemented:**
 
-* A user can now view the average score for a film. Handled by Moviescontroller#score
-* A user can now view all films reviewed by the reviewers of a given film. Handled by Moviescontroller#viewed_with
+* A user can now view the average score for a film. Handled by `MoviesController#score`
+* A user can now view all films reviewed by the reviewers of a given film. Handled by `MoviesController#viewed_with`
 
 **Planned:**
 
 * A user should be able to see all of a Moviegoer's Reviews
 
-This will involve a query that looks like moviegoer.reviews
+This will involve a query that looks like `moviegoer.reviews`
 
 Unfortunately, the way that the prototype database is set up will prevent these great new features from scaling very well. As the number of Reviews grows, the performance will drop significantly.
 
 To help you document the performance of the queries the designer has added a benchmarking action that will provide a very rough estimate of query performance. You can get an approximate idea of how long some sample queries take for a small data set by starting up the server and then visiting:
 
-http://localhost:3000/benchmark/movies
+`http://localhost:3000/benchmark/movies`
 
 or
 
-http://localhost:3000/benchmark/moviegoers
+`http://localhost:3000/benchmark/moviegoers`
 
-Take a look at the code in app/controller/movies_controller.rb to see how the preceding commands work. There are a few things to take note of:
+Take a look at the code in `app/controller/movies_controller.rb` to see how the preceding commands work. There are a few things to take note of:
 
 * These times are approximations, there is significant overhead caused by loading ActiveRecord objects, so the time spent executing queries is not the same as the time displayed on the page.
 * The database may not contain enough movies for these to show significant improvements after you apply migrations to improve the query performance.
@@ -139,14 +141,6 @@ movie.reviews
 
 To easily create a migration run the following command:
 
-```
-rails generate migration migrationName
-```
+`rails generate migration` *migrationName*
  
-To read more about migrations visit: http://guides.rubyonrails.org/migrations.html After you have added your migrations, make sure to run
-
-```
-rake db:migrate
-```
-
-to make sure they get applied to the database. Check your results either by using sqlite3, or the benchmark action to see if you are getting better results. If you use the benchmark action It may be necessary to add more Reviews to make this noticeable. You can modify db/seeds.rb to do so. A successful change should eliminate table scans for both of the queries.
+To read more about migrations visit: http://guides.rubyonrails.org/migrations.html After you have added your migrations, make sure to run `rake db:migrate` to make sure they get applied to the database. Check your results either by using `sqlite3`, or the benchmark action to see if you are getting better results. If you use the benchmark action It may be necessary to add more Reviews to make this noticeable. You can modify `db/seeds.rb` to do so. A successful change should eliminate table scans for both of the queries.
