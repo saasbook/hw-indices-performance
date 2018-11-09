@@ -1,7 +1,5 @@
 class MoviesController < ApplicationController
  
- caches_page :index
- 
   def show
     id = params[:id] # retrieve movie ID from URI route
     @movie = Movie.find(id) # look up movie by unique ID
@@ -91,8 +89,8 @@ class MoviesController < ApplicationController
     benchType=params[:type]
     @results=[]
     times_to_run=Movie.count/2
-    search_movies=Movie.all(:limit=>times_to_run)
-    search_goers=Moviegoer.all(:limit=>times_to_run)
+    search_movies=Movie.all.limit(times_to_run)
+    search_goers=Moviegoer.all.limit(times_to_run)
     case benchType
 
     when "movies"
