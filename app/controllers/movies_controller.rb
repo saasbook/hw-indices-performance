@@ -1,5 +1,8 @@
 class MoviesController < ApplicationController
- 
+  def movie_params
+    params.require(:movie).permit(:title, :description, :release_date, :rating, :director)
+  end
+
   def show
     id = params[:id] # retrieve movie ID from URI route
     @movie = Movie.find(id) # look up movie by unique ID
@@ -33,7 +36,7 @@ class MoviesController < ApplicationController
       flash.keep
       redirect_to :sort => sort, :ratings => @selected_ratings and return
     end
-    @movies = Movie.find_all_by_rating(@selected_ratings.keys, ordering,:limit=>10)
+    @movies = Movie.where(rating: @selected_ratings.keys).order(ordering).limit(10)
   end
 
   def new
@@ -41,7 +44,7 @@ class MoviesController < ApplicationController
   end
 
   def create
-    @movie = Movie.create!(params[:movie])
+    @movie = Movie.create!(movie_params)
     flash[:notice] = "#{@movie.title} was successfully created."
     redirect_to movies_path
   end
@@ -52,7 +55,7 @@ class MoviesController < ApplicationController
 
   def update
     @movie = Movie.find params[:id]
-    @movie.update_attributes!(params[:movie])
+    @movie.update_attributes!(movie_params)
     flash[:notice] = "#{@movie.title} was successfully updated."
     redirect_to movie_path(@movie)
   end
@@ -71,7 +74,7 @@ class MoviesController < ApplicationController
       flash[:warning] = "'#{@movie.title}' has no director info"
       redirect_to movies_path and return
     end
-    @movies = Movie.find_all_by_director(@director)
+    @movies = Movie.where director: @director
   end
 
   def score
