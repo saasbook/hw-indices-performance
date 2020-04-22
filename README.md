@@ -3,7 +3,7 @@ Overview
 
 You have been assigned to improve the database performance of a new version of the Rotten Potatoes site.
 
-Setup:
+# Setup
 ----
 
 Fork this repo and clone your fork to your development environment.
@@ -22,22 +22,71 @@ and
 rake db:seed
 ``` 
 
-The seed command may take a while as it generates roughly 5000 database entries. If the seed command is taking too long, consider lowering the amount of data that it creates by changing the following lines of db/seeds.rb:
+The seed command may take a while as it generates roughly 5000
+database entries. If the seed command is taking too long, consider
+lowering the amount of data that it creates by changing the values o`
+movie_count` and `review_count` in `db/seeds.rb`.
 
-```
-movie_count=250  
-review_count=20  
-```
+# Part 1: Improve database performance with indices
 
 This version of the app has some changes:
 
 `Review` and `Moviegoer` models have been added.
 Take a look at the model files in `app/models/` to get a better understanding of the relationship between the models. Note that:
 
-* `Movie` has many `Review`s.
-* `Movie` has many `Moviegoer`s through `Review`.
-* `Moviegoer` has many `Review`s.
-* `Moviegoer` has many `Movie`s through `Review`.
+
+<details>
+<summary>
+Looking at the <code>Movie</code> model as an example, you can see
+that a movie has many reviews, and a review belongs to a movie. 
+By analogy, what is the relationship between
+moviegoers and reviews?  Express the answer in both directions, that
+is, the relationship of moviegoers to reviews, and of reviews to moviegoers.
+</summary>
+<p><blockquote>
+A moviegoer has many reviews; a review belongs to a moviegoer.
+</blockquote></p>
+</details>
+
+
+<details>
+<summary>
+Given the above answer, what change(s) need to be made to the
+<code>movies</code> and <code>reviews</code> database tables in order
+to implement those relationships using foreign keys?
+</summary>
+<p><blockquote>
+The <code>reviews</code> table gets a new column which is the foreign
+key to the movie that "owns" that review.  No changes are made to the
+<code>movies</code> table.
+</blockquote></p>
+</details>
+
+<details>
+<summary>
+What is the relationship between movies and moviegoers, again in both directions?
+</summary>
+<p><blockquote>
+A movie has many moviegoers, through reviews.  That is: a movie has
+many reviews, and each of those reviews belongs to a moviegoer, so the
+relationship from movies to moviegoers is many-to-many.  Similarly, a
+moviegoer has many reviews, each of which belongs to a movie, so the
+relationship from moviegoers to movies is also many-to-many.
+</blockquote></p>
+</details>
+
+
+<details>
+<summary>
+What line(s) of code in the <code>Movie</code> model capture the
+relationship between movies and moviegoers?
+</summary>
+<p><blockquote>
+You need both <code>movie has_many :reviews</code> and 
+<code>movie has_many :moviegoers, :through => :reviews</code> to
+capture the relationship.
+</blockquote></p>
+</details>
 
 New features for users in various stages of completion:
 
@@ -120,27 +169,110 @@ SCAN TABLE reviews (~# rows)
 The number of rows is an approximation, but it is useful for comparing performance between different schema. The skeleton code performs a Table Scan to execute this query. This is one of the reasons that the current implementation will lose performance as the amount of Reviews grows.
 
 
-Requirements
------
-
-Your task is to add a migration, or migrations that will improve the performance by eliminate the use of table scans for the following two queries:
-
-```
-moviegoer.reviews
+Your task is to add a migration, or migrations that will improve the
+performance by eliminate the use of table scans for queries such as 
+`moviegoer.movies` and `movie.moviegoers`.
 ```
 
-and
+<details>
+<summary>
+  To avoid table scan(s) for the query <code>moviegoer.movies</code>, state which
+  column(s) of which table(s) should be indexed, and justify your
+  answer.
+</summary>
+<p><blockquote>
+To get the movies associated with a moviegoer can be thought of as a
+2-step process: (1) get the reviews for that moviegoer; (2) for
+each review, get its movie.  Step 1 means that for a given moviegoer
+whose id is <code>i</code>,
+we want to find all the reviews whose <code>moviegoer_id</code> foreign key has
+the value <code>i</code>.  Indexing the <code>moviegoer_id</code> field of <code>reviews</code> will
+allow this lookup to happen without scanning the entire <code>reviews</code> table.
+</blockquote></p>
+</details>
 
-```
-movie.reviews
-```
 
-**Note**: In the previous two queries, moviegoer and movie are instances of the Moviegoer and Movie models. 
+<details>
+<summary>
+Similarly, state and justify which column(s) of which table(s) should
+be indexed to avoid a table scan for <code>movie.moviegoers</code>.
+</summary>
+<p><blockquote>
+By similar logic, the <code>movie_id</code> field of
+<code>reviews</code> should be indexed.
+</blockquote></p>
+</details>
 
-**Note**: This should not require very much code, in fact adding 2 indices is enough to prevent table scans from occurring for these queries. 
 
-To easily create a migration run the following command:
+<details>
+<summary>
+With some databases, the performance boost of an index can be even
+faster if the index can be declared <i>unique</i>, that is, if you can
+guarantee that there are no repeated values in the indexed column(s).
+Can you declare the necessary indices as unique?  Explain why or why not.
+</summary>
+<p><blockquote>
+No, you cannot.  Consider the <code>reviews.movie_id</code> index.  If
+a given movie has, say, 5 reviews, there will be 5 rows of the
+<code>reviews</code> table where the <code>movie_id</code> column has
+the same value.  A similar argument applies for <code>reviews.moviegoer_id</code>.
+</blockquote></p>
+</details>
 
-`rails generate migration` *migrationName*
- 
-To read more about migrations visit: http://guides.rubyonrails.org/migrations.html After you have added your migrations, make sure to run `rake db:migrate` to make sure they get applied to the database. Check your results either by using `sqlite3`, or the benchmark action to see if you are getting better results. If you use the benchmark action It may be necessary to add more Reviews to make this noticeable. You can modify `db/seeds.rb` to do so. A successful change should eliminate table scans for both of the queries.
+Create and apply a
+[migration](http://guides.rubyonrails.org/migrations.html) to add the
+above indices to the database and deploy to production.
+
+Now re-run the benchmarks and verify using the techniques used
+previously that no table scans are being performed.
+
+Note: It may be necessary to add
+more Reviews to make this noticeable. You can modify `db/seeds.rb` to
+do so.  Why would you expect that differences in performance would be
+most noticeable as Reviews are added, but not very noticeable if
+Movies and/or Moviegoers are added?
+
+
+
+TBD: Come up with a way to have the student express performance
+improvement, and under reasonable assumptions, have them use that to
+estimate how many times more users they could now serve without adding
+more hardware capacity.
+
+# Part 2: Caching
+
+TBD
+
+Some self check questions on caching:
+
+
+<details>
+<summary>
+Which design pattern is used to invalidate a cached page after the
+underlying data has changed? 
+</summary>
+<p><blockquote>
+The Observer pattern.  Observing a class and interposing on the
+ActiveRecord before-save hook lets us know that particular record(s)
+are about to be modified, giving us a chance to invalidate any cached
+data based on those records.
+</blockquote></p>
+</details>
+
+
+<details> <summary> 
+Which operations can be avoided when serving views in the Movie model
+that have been enhanced with fragment caching?
+(a) querying the database; (b) executing the code in the controller
+action; (c) generating certain parts of the view; (d) invoking the
+Rails app (logic tier) from the web server (presentation tier).
+</summary> 
+<p><blockquote>
+(a) and (c).  If a particular fragment of a view has been previously
+computed and cached, the database will not be contacted again, nor
+will the view subsystem need to "reconstitute" that view fragment from
+the underlying data.  But the controller method (b) still needs to run
+(for example, to determine which fragments to select for display in
+the view), therefore the app itself (d) must run as well.
+</blockquote></p>
+</details>
